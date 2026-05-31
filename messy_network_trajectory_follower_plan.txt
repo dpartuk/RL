@@ -1,0 +1,179 @@
+Plan: The Messy-Network Trajectory Follower
+============================================
+
+claude --resume 08680c94-97ff-4082-86e4-d448efedcc9f
+
+Context
+-------
+This project is inspired by Fan et al. (2025), "Inverse Reinforcement Learning for
+Discrete-Time Systems With Data Dropouts" (IEEE Trans. Cybernetics). The core insight:
+when RL agents operate over unreliable networks where state observations randomly drop
+out, standard Q-learning degrades. The paper shows that explicitly accounting for dropout
+in the learning update recovers near-optimal performance.
+
+We build a simplified, educational Python simulation that demonstrates this insight
+through a 1D tracking task with three agent variants.
+
+Single file: messy_network_trajectory_follower.py
+Style reference: assignment-1/epsilon_greedy_with_costs.py
+  (constants at top, function-based, NumPy + Matplotlib, __main__ guard)
+
+
+================================================================================
+PART A: THREE-AGENT DROPOUT COMPARISON
+================================================================================
+
+Environment Design
+------------------
+- Task:    Agent tracks a sinusoidal target: target(t) = 2.0 * sin(2*pi*t / 100)
+- State:   Relative distance (agent_pos - target_pos) discretized into 41 bins
+           over range [-4.0, +4.0]
+- Actions: {move_left, stay, move_right} -- each moves agent by +/-0.2 units
+- Reward:  -|relative_distance| (closer to target = better)
+- Dropout: At each step, with probability 0.3, the true state observation is hidden
+
+Three Agents
+------------
+1. BASELINE AGENT
+   - Dropout during training: No
+   - Observation handling:    Always sees true state
+   - Q-update:               Standard Q-learning
+
+2. NAIVE AGENT
+   - Dropout during training: Yes
+   - Observation handling:    Uses last received state (stale fallback)
+   - Q-update:               Standard Q-learning on stale states
+
+3. DROPOUT-AWARE AGENT
+   - Dropout during training: Yes
+   - Observation handling:    Linear extrapolation from last two known states
+   - Q-update:               Confidence-weighted alpha:
+                              effective_alpha = ALPHA * confidence
+                              where confidence decays by 0.6x per missed step
+
+The dropout-aware agent's confidence-weighted update is the paper's core idea:
+don't aggressively update Q based on unreliable state estimates.
+
+Expected Result
+---------------
+- Baseline:      best performance (upper bound, no dropout)
+- Naive:         worst performance (Q-table corrupted by stale-state indexing)
+- Dropout-Aware: between the two, significantly better than naive
+
+
+================================================================================
+PART B: INVERSE RL COMPONENT
+================================================================================
+
+Instead of hand-coding reward = -|distance|, learn reward weights from expert
+demonstrations.
+
+Approach
+--------
+1. Expert demos: A perfect tracker that always picks the distance-minimizing
+   action (no dropout)
+
+2. Features (5-dim):
+   - f0: bullseye indicator (on target)
+   - f1: -|relative_distance| (linear penalty)
+   - f2: -(relative_distance^2) (quadratic penalty)
+   - f3: danger-zone flag (far from target)
+   - f4: bias term
+
+3. IRL loop (simplified max-margin / feature-matching):
+   - Initialize weights w = zeros(5)
+   - For 200 iterations:
+       a. Train a Q-learner using reward = dot(w, features)
+       b. Compute learner's feature expectations
+       c. Update: w += lr * (expert_features - learner_features)
+
+4. Validation: Train an agent with learned reward, compare tracking error
+   to hand-coded reward agent
+
+Expected Result
+---------------
+Learned weights should heavily favor the distance features, and the IRL-trained
+agent should achieve similar tracking performance to the hand-coded reward agent.
+
+
+================================================================================
+IMPLEMENTATION ORDER (9 STEPS)
+================================================================================
+
+Step  What                    Key Functions                              Test
+----  ----------------------  -----------------------------------------  ---------------------------
+  1   Constants + imports     All UPPER_CASE constants                   File runs without error
+  2   Environment             target_position, discretize_state,         target_position(25) = 2.0
+                              compute_reward, step_environment           discretize_state(0.0) = 20
+  3   Baseline agent          train_baseline_agent                       Reward improves over 500 eps
+  4   Dropout + Naive agent   apply_dropout, train_naive_agent           Worse final reward than base
+  5   Estimator + Aware       estimate_state,                            Better than naive,
+      agent                   train_dropout_aware_agent                  worse than baseline
+  6   Evaluation              evaluate_agent (handles all 3 modes)       Returns errors + trajectories
+  7   Plotting                6 plot functions: training curves,         Visual sanity check
+                              tracking error, trajectories,
+                              cumulative reward, IRL convergence,
+                              IRL comparison
+  8   IRL                     compute_features,                          Weights converge,
+                              generate_expert_demonstrations,            IRL agent tracks well
+                              compute_policy_feature_expectations,
+                              learn_reward_weights,
+                              train_agent_with_learned_reward
+  9   Main block              Wire everything together,                  Full end-to-end run
+                              print summary tables
+
+
+================================================================================
+KEY DESIGN DECISIONS
+================================================================================
+
+- Relative state (agent - target), not absolute positions:
+  Keeps Q-table small (41x3 = 123 entries) and position-invariant.
+
+- Agent step = 0.2 vs max target speed ~0.126:
+  Agent CAN keep up but must act correctly -- not trivial.
+
+- Linear extrapolation instead of Kalman filter:
+  Conceptually simple, sufficient to show the insight.
+
+- Confidence decay = 0.6:
+  Aggressive enough to differentiate fresh vs stale
+  (halves every ~1.3 missed steps).
+
+- Separate random seeds:
+  Training seed=42, eval seed=99 -- ensures fair comparison.
+
+
+================================================================================
+VERIFICATION
+================================================================================
+
+1. Run: python messy_network_trajectory_follower.py
+2. Check printed summary table shows: baseline_error < aware_error < naive_error
+3. Training curves plot shows all three agents converging, baseline highest reward
+4. Trajectory plots show naive agent lagging/oscillating during dropout bursts,
+   while dropout-aware agent stays closer to target
+5. IRL comparison plot shows learned-reward agent achieving similar error to
+   hand-coded reward agent
+
+
+================================================================================
+CONNECTION TO THE PAPER
+================================================================================
+
+Paper Concept                          Our Implementation
+-------------------------------------  --------------------------------------------
+Bernoulli dropout variable theta(k)    np.random.rand() < DROPOUT_PROB in apply_dropout
+Observer-based state reconstruction    estimate_state with linear extrapolation
+Modified Bellman backup under dropout  effective_alpha = ALPHA * confidence in Q-update
+Inverse RL under imperfect info        Feature-matching IRL loop in Part B
+
+
+================================================================================
+REFERENCE
+================================================================================
+
+Fan, J., Shi, P., Xue, W., Lian, B., Cui, Y., & Lewis, F. L. (2025).
+Inverse Reinforcement Learning for Discrete-Time Systems With Data Dropouts.
+IEEE Transactions on Cybernetics, 55(4), 1744-1757.
+https://doi.org/10.1109/tcyb.2025.3539961
