@@ -954,6 +954,34 @@ model-based unlike pure model-free Q-Learning and SARSA. (f) The stochastic
 transition model is fixed at 80/10/10; varying the stochasticity level would
 reveal how each algorithm copes with different degrees of environmental
 uncertainty.
+
+8. Results summary:
+
+  Algorithm        Avg Reward (last 100)   Convergence Ep   Discounted Return
+  ---------------------------------------------------------------------------
+  DP               8.82                    50               2.35 (optimal)
+  TD0              8.53                    53               2.18
+  Q-Learning       8.51                    100              2.31
+  SARSA            8.49                    88               2.31
+  TD(lambda=0.2)   8.24                    73               2.21
+  TD(lambda=0.5)   8.07                    61               2.16
+  TD(lambda=0.8)   8.03                    62               2.18
+  MC               7.66                    313              0.55
+
+Key findings:
+- DP converges instantly with full model knowledge and produces the optimal policy.
+- Q-Learning and SARSA produce the best model-free policies (discounted return 2.31),
+  converging within 88-100 episodes. Both closely match the DP optimal.
+- TD0 converges fastest among model-free methods (episode 53) thanks to bootstrapping
+  combined with model-based action selection, achieving a near-optimal policy (2.18).
+- TD(lambda) variants all converge quickly (episodes 61-73). Higher lambda does not
+  always yield a better final policy, but eligibility traces accelerate early learning
+  by propagating reward signals multiple steps back per update.
+- MC is the slowest to converge (episode 313) and produces the weakest final policy
+  (0.55 discounted return). This demonstrates MC's core limitation: it must wait for
+  complete episodes before updating, and its high-variance return estimates lead to
+  noisy Q-values that hurt the derived greedy policy. TD bootstrapping methods clearly
+  outperform MC in this delayed-reward environment.
 """
 
 
