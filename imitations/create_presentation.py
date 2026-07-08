@@ -1011,7 +1011,316 @@ add_text_box(slide, Inches(8.2), Inches(5.5), Inches(4.8), Inches(0.8),
              font_size=16, color=LIGHT_GRAY, alignment=PP_ALIGN.CENTER)
 
 # ============================================================
-# SLIDE 18: Three Lessons
+# 2D EXTENSION SLIDES
+# ============================================================
+PLOTS_2D_DIR = os.path.join(os.path.dirname(OUTPUT_DIR), "imitations_2d", "output_plots")
+
+# --- SLIDE: Transition — "But was it too easy?" ---
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+set_slide_bg(slide, BG_DARK)
+
+add_text_box(slide, Inches(1), Inches(1.0), Inches(11), Inches(1.5),
+             "But was our problem too easy?",
+             font_size=44, color=ACCENT_YELLOW, bold=True,
+             alignment=PP_ALIGN.CENTER)
+
+_, tf = add_text_box(slide, Inches(1.5), Inches(3.0), Inches(10), Inches(3.5),
+                     "In 1D, Naive and Dropout-Aware converged to the same policy.",
+                     font_size=26, color=WHITE, alignment=PP_ALIGN.CENTER)
+add_paragraph(tf, "", font_size=10, color=WHITE)
+add_paragraph(tf, "41 states, 3 actions — too simple to corrupt.",
+              font_size=24, color=LIGHT_GRAY, alignment=PP_ALIGN.CENTER,
+              space_before=12)
+add_paragraph(tf, "", font_size=10, color=WHITE)
+add_paragraph(tf, "What happens when we scale up?",
+              font_size=30, color=ACCENT_RED, bold=True,
+              alignment=PP_ALIGN.CENTER, space_before=16)
+
+# --- SLIDE: 2D Environment Setup ---
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+set_slide_bg(slide, BG_DARK)
+
+add_text_box(slide, Inches(0.8), Inches(0.3), Inches(11), Inches(0.8),
+             "Scaling Up: 2D Figure-Eight Tracking",
+             font_size=40, color=WHITE, bold=True)
+
+# Left: 1D vs 2D comparison
+add_rounded_rect(slide, Inches(0.8), Inches(1.5), Inches(5.5), Inches(5.2),
+                 RGBColor(0x2A, 0x2A, 0x45))
+
+_, tf = add_text_box(slide, Inches(1.0), Inches(1.6), Inches(5.1), Inches(5),
+                     "", font_size=20, color=ACCENT_YELLOW, bold=True)
+
+tbl_2d = slide.shapes.add_table(
+    6, 3, Inches(0.8), Inches(1.6), Inches(5.5), Inches(4.0)
+)
+table = tbl_2d.table
+table.columns[0].width = Inches(1.8)
+table.columns[1].width = Inches(1.8)
+table.columns[2].width = Inches(1.9)
+
+setup_data = [
+    ("", "1D (before)", "2D (now)"),
+    ("States", "41", "441 (21x21)"),
+    ("Actions", "3", "9 (8 dirs + stay)"),
+    ("Q-table", "123 entries", "3,969 entries"),
+    ("Target", "Sine wave", "Figure-eight"),
+    ("Training", "500 episodes", "800 episodes"),
+]
+
+for row_idx, row_data in enumerate(setup_data):
+    for col_idx, val in enumerate(row_data):
+        cell = table.cell(row_idx, col_idx)
+        cell.text = val
+        for p in cell.text_frame.paragraphs:
+            p.font.name = "Calibri"
+            p.font.size = Pt(18)
+            p.alignment = PP_ALIGN.CENTER
+            if row_idx == 0:
+                p.font.bold = True
+                p.font.color.rgb = ACCENT_YELLOW
+            elif col_idx == 2:
+                p.font.color.rgb = ACCENT_GREEN
+                p.font.bold = True
+            elif col_idx == 1:
+                p.font.color.rgb = LIGHT_GRAY
+            else:
+                p.font.color.rgb = WHITE
+        cell.fill.solid()
+        if row_idx == 0:
+            cell.fill.fore_color.rgb = RGBColor(0x33, 0x33, 0x55)
+        elif row_idx % 2 == 0:
+            cell.fill.fore_color.rgb = RGBColor(0x28, 0x28, 0x42)
+        else:
+            cell.fill.fore_color.rgb = RGBColor(0x22, 0x22, 0x3A)
+
+# Right: why this matters
+add_rounded_rect(slide, Inches(6.8), Inches(1.5), Inches(5.8), Inches(5.2),
+                 RGBColor(0x33, 0x33, 0x55))
+
+_, tf = add_text_box(slide, Inches(7.0), Inches(1.7), Inches(5.4), Inches(5),
+                     "Why 2D changes everything",
+                     font_size=22, color=ACCENT_YELLOW, bold=True)
+add_paragraph(tf, "", font_size=8, color=WHITE)
+add_paragraph(tf, "32x larger Q-table",
+              font_size=20, color=ACCENT_GREEN, bold=True, space_before=14)
+add_paragraph(tf, "Many states visited rarely — corrupted\nupdates can flip the best action",
+              font_size=16, color=LIGHT_GRAY, space_before=4)
+add_paragraph(tf, "", font_size=6, color=WHITE)
+add_paragraph(tf, "3x more actions",
+              font_size=20, color=ACCENT_GREEN, bold=True, space_before=14)
+add_paragraph(tf, "Choosing between 8 directions is\nambiguous — noise promotes wrong ones",
+              font_size=16, color=LIGHT_GRAY, space_before=4)
+add_paragraph(tf, "", font_size=6, color=WHITE)
+add_paragraph(tf, "2D stale states",
+              font_size=20, color=ACCENT_GREEN, bold=True, space_before=14)
+add_paragraph(tf, "Wrong in both X and Y simultaneously\n— bigger mistakes, harder to recover",
+              font_size=16, color=LIGHT_GRAY, space_before=4)
+
+# --- SLIDE: 2D Trajectories ---
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+set_slide_bg(slide, BG_DARK)
+
+add_text_box(slide, Inches(0.8), Inches(0.2), Inches(11), Inches(0.7),
+             "2D Trajectories: The Difference Is Visible",
+             font_size=38, color=WHITE, bold=True)
+
+plot_path = os.path.join(PLOTS_2D_DIR, "2_trajectories_2d.png")
+if os.path.exists(plot_path):
+    slide.shapes.add_picture(plot_path, Inches(0.5), Inches(1.1),
+                             width=Inches(12.3))
+
+add_text_box(slide, Inches(0.8), Inches(6.2), Inches(11.5), Inches(1),
+             "Dropout-Aware (blue) traces the figure-eight more smoothly. "
+             "Naive (red) shows sharper deviations from corrupted Q-table entries.",
+             font_size=18, color=LIGHT_GRAY, alignment=PP_ALIGN.CENTER)
+
+# --- SLIDE: 2D Eval Results ---
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+set_slide_bg(slide, BG_DARK)
+
+add_text_box(slide, Inches(0.8), Inches(0.3), Inches(6), Inches(0.8),
+             "2D Results: The Gap Is Real",
+             font_size=40, color=WHITE, bold=True)
+
+# Results table
+tbl_shape = slide.shapes.add_table(
+    4, 3, Inches(0.8), Inches(1.5), Inches(7), Inches(3.0)
+)
+table = tbl_shape.table
+table.columns[0].width = Inches(2.5)
+table.columns[1].width = Inches(2.25)
+table.columns[2].width = Inches(2.25)
+
+eval_2d_data = [
+    ("Agent", "Mean Track Error", "Total Reward"),
+    ("Baseline (no drop)", "0.2373", "-85.44"),
+    ("Naive (30% drop)", "0.4413", "-158.87"),
+    ("Dropout-Aware (30%)", "0.3730", "-134.29"),
+]
+
+for row_idx, row_data in enumerate(eval_2d_data):
+    for col_idx, val in enumerate(row_data):
+        cell = table.cell(row_idx, col_idx)
+        cell.text = val
+        for p in cell.text_frame.paragraphs:
+            p.font.name = "Calibri"
+            p.font.size = Pt(22)
+            p.alignment = PP_ALIGN.CENTER
+            if row_idx == 0:
+                p.font.bold = True
+                p.font.color.rgb = ACCENT_YELLOW
+            elif row_idx == 3:
+                p.font.color.rgb = ACCENT_GREEN
+                p.font.bold = True
+            elif row_idx == 1:
+                p.font.color.rgb = ACCENT_ORANGE
+            else:
+                p.font.color.rgb = WHITE
+        cell.fill.solid()
+        if row_idx == 0:
+            cell.fill.fore_color.rgb = RGBColor(0x33, 0x33, 0x55)
+        elif row_idx % 2 == 0:
+            cell.fill.fore_color.rgb = RGBColor(0x28, 0x28, 0x42)
+        else:
+            cell.fill.fore_color.rgb = RGBColor(0x22, 0x22, 0x3A)
+
+# Highlight box
+add_rounded_rect(slide, Inches(0.8), Inches(4.8), Inches(7), Inches(1.8),
+                 RGBColor(0x1E, 0x3A, 0x5C))
+
+_, tf = add_text_box(slide, Inches(1.0), Inches(4.9), Inches(6.6), Inches(1.6),
+                     "Dropout-Aware beats Naive by 15.5%",
+                     font_size=26, color=ACCENT_GREEN, bold=True)
+add_paragraph(tf, "", font_size=6, color=WHITE)
+add_paragraph(tf, "Unlike 1D, the policies are now DIFFERENT.",
+              font_size=20, color=WHITE, space_before=8)
+add_paragraph(tf, "Corrupted Q-table entries produce wrong actions\n"
+              "in rarely-visited states.",
+              font_size=18, color=LIGHT_GRAY, space_before=6)
+
+# Bar chart on the right
+plot_path = os.path.join(PLOTS_2D_DIR, "4_eval_comparison.png")
+if os.path.exists(plot_path):
+    slide.shapes.add_picture(plot_path, Inches(8.0), Inches(1.3),
+                             width=Inches(5))
+
+# --- SLIDE: 1D vs 2D side-by-side ---
+slide = prs.slides.add_slide(prs.slide_layouts[6])
+set_slide_bg(slide, BG_DARK)
+
+add_text_box(slide, Inches(0.8), Inches(0.3), Inches(11.5), Inches(0.8),
+             "1D vs 2D: Complexity Reveals the Truth",
+             font_size=40, color=WHITE, bold=True,
+             alignment=PP_ALIGN.CENTER)
+
+# 1D box
+add_rounded_rect(slide, Inches(0.8), Inches(1.5), Inches(5.6), Inches(5.2),
+                 RGBColor(0x2A, 0x2A, 0x45))
+
+_, tf = add_text_box(slide, Inches(1.0), Inches(1.6), Inches(5.2), Inches(0.5),
+                     "1D Sine Wave (Simple)",
+                     font_size=24, color=ACCENT_ORANGE, bold=True,
+                     alignment=PP_ALIGN.CENTER)
+
+add_text_box(slide, Inches(1.0), Inches(2.3), Inches(5.2), Inches(1),
+             "123 Q-table entries",
+             font_size=18, color=LIGHT_GRAY, alignment=PP_ALIGN.CENTER)
+
+tbl_1d = slide.shapes.add_table(
+    4, 2, Inches(1.2), Inches(3.0), Inches(4.8), Inches(2.5)
+)
+table = tbl_1d.table
+table.columns[0].width = Inches(2.4)
+table.columns[1].width = Inches(2.4)
+
+data_1d = [
+    ("Agent", "Eval Error"),
+    ("Baseline", "0.0858"),
+    ("Naive", "0.1236"),
+    ("Dropout-Aware", "0.1236"),
+]
+
+for row_idx, row_data in enumerate(data_1d):
+    for col_idx, val in enumerate(row_data):
+        cell = table.cell(row_idx, col_idx)
+        cell.text = val
+        for p in cell.text_frame.paragraphs:
+            p.font.name = "Calibri"
+            p.font.size = Pt(18)
+            p.alignment = PP_ALIGN.CENTER
+            if row_idx == 0:
+                p.font.bold = True
+                p.font.color.rgb = ACCENT_YELLOW
+            else:
+                p.font.color.rgb = WHITE
+        cell.fill.solid()
+        if row_idx == 0:
+            cell.fill.fore_color.rgb = RGBColor(0x33, 0x33, 0x55)
+        else:
+            cell.fill.fore_color.rgb = RGBColor(0x28, 0x28, 0x42)
+
+add_text_box(slide, Inches(1.0), Inches(5.7), Inches(5.2), Inches(0.8),
+             "Naive = Dropout-Aware\nSame policy, no visible difference",
+             font_size=18, color=ACCENT_ORANGE, alignment=PP_ALIGN.CENTER,
+             bold=True)
+
+# 2D box
+add_rounded_rect(slide, Inches(6.8), Inches(1.5), Inches(5.8), Inches(5.2),
+                 RGBColor(0x2A, 0x2A, 0x45))
+
+_, tf = add_text_box(slide, Inches(7.0), Inches(1.6), Inches(5.4), Inches(0.5),
+                     "2D Figure-Eight (Complex)",
+                     font_size=24, color=ACCENT_GREEN, bold=True,
+                     alignment=PP_ALIGN.CENTER)
+
+add_text_box(slide, Inches(7.0), Inches(2.3), Inches(5.4), Inches(1),
+             "3,969 Q-table entries (32x larger)",
+             font_size=18, color=LIGHT_GRAY, alignment=PP_ALIGN.CENTER)
+
+tbl_2d = slide.shapes.add_table(
+    4, 2, Inches(7.2), Inches(3.0), Inches(5.0), Inches(2.5)
+)
+table = tbl_2d.table
+table.columns[0].width = Inches(2.5)
+table.columns[1].width = Inches(2.5)
+
+data_2d = [
+    ("Agent", "Eval Error"),
+    ("Baseline (no drop)", "0.2373"),
+    ("Naive (30% drop)", "0.4413"),
+    ("Dropout-Aware", "0.3730"),
+]
+
+for row_idx, row_data in enumerate(data_2d):
+    for col_idx, val in enumerate(row_data):
+        cell = table.cell(row_idx, col_idx)
+        cell.text = val
+        for p in cell.text_frame.paragraphs:
+            p.font.name = "Calibri"
+            p.font.size = Pt(18)
+            p.alignment = PP_ALIGN.CENTER
+            if row_idx == 0:
+                p.font.bold = True
+                p.font.color.rgb = ACCENT_YELLOW
+            elif row_idx == 3:
+                p.font.color.rgb = ACCENT_GREEN
+                p.font.bold = True
+            else:
+                p.font.color.rgb = WHITE
+        cell.fill.solid()
+        if row_idx == 0:
+            cell.fill.fore_color.rgb = RGBColor(0x33, 0x33, 0x55)
+        else:
+            cell.fill.fore_color.rgb = RGBColor(0x28, 0x28, 0x42)
+
+add_text_box(slide, Inches(7.0), Inches(5.7), Inches(5.4), Inches(0.8),
+             "Dropout-Aware BEATS Naive by 15.5%\nComplexity reveals the real advantage",
+             font_size=18, color=ACCENT_GREEN, alignment=PP_ALIGN.CENTER,
+             bold=True)
+
+# ============================================================
+# SLIDE: Three Lessons (updated number)
 # ============================================================
 slide = prs.slides.add_slide(prs.slide_layouts[6])
 set_slide_bg(slide, BG_DARK)
