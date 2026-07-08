@@ -1,2 +1,4 @@
 __pycache__/
 *.pyc
+conversation.txt
+.DS_Store
