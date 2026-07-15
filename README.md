@@ -95,8 +95,8 @@ The 1D problem is too simple to differentiate Naive from Dropout-Aware at evalua
 | `irl.py` | Feature extraction + Inverse RL loop |
 | `state_estimator.py` | State estimator (ablation study) |
 | `plotting.py` | All visualization functions |
-| `create_abstract.py` | Generates `abstract.docx` |
-| `create_presentation.py` | Generates 25-slide `presentation.pptx` |
+| `../create_abstract.py` | Generates `abstract.docx` (in `final_project/`) |
+| `../create_presentation.py` | Generates 25-slide `presentation.pptx` (in `final_project/`) |
 
 **Run:**
 ```bash

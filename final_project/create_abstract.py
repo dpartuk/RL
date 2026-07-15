@@ -7,7 +7,7 @@ from docx.oxml.ns import qn
 import os
 
 OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
-FIGURE_PATH = os.path.join(OUTPUT_DIR, "output_plots", "4_trajectories.png")
+FIGURE_PATH = os.path.join(OUTPUT_DIR, "experiment_1d", "output_plots", "4_trajectories.png")
 OUT_PATH = os.path.join(OUTPUT_DIR, "abstract.docx")
 
 doc = Document()

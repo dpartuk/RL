@@ -8,8 +8,8 @@ from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 from pptx.enum.shapes import MSO_SHAPE
 
 OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
-PLOTS_DIR = os.path.join(OUTPUT_DIR, "output_plots")
-IRL_DIAGRAM_PATH = os.path.join(OUTPUT_DIR, "output_plots", "irl_diagram.png")
+PLOTS_DIR = os.path.join(OUTPUT_DIR, "experiment_1d", "output_plots")
+IRL_DIAGRAM_PATH = os.path.join(OUTPUT_DIR, "experiment_1d", "output_plots", "irl_diagram.png")
 OUT_PATH = os.path.join(OUTPUT_DIR, "presentation.pptx")
 
 # --- Colors ---
@@ -1013,7 +1013,7 @@ add_text_box(slide, Inches(8.2), Inches(5.5), Inches(4.8), Inches(0.8),
 # ============================================================
 # 2D EXTENSION SLIDES
 # ============================================================
-PLOTS_2D_DIR = os.path.join(os.path.dirname(OUTPUT_DIR), "imitations_2d", "output_plots")
+PLOTS_2D_DIR = os.path.join(OUTPUT_DIR, "experiment_2d", "output_plots")
 
 # --- SLIDE: Transition — "But was it too easy?" ---
 slide = prs.slides.add_slide(prs.slide_layouts[6])
